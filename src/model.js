@@ -24,7 +24,8 @@ var GravityModel = (function () {
 		{ key: 'scoreDiagonal', label: 'Score diagonal threes', defaultValue: false },
 		{ key: 'removeScoredThrees', label: 'Remove scored three-cell matches', defaultValue: false },
 		{ key: 'removeGroups', label: 'Remove any group of four or more', defaultValue: true },
-		{ key: 'scoreEveryTurn', label: 'Score every turn after gravity resolves', defaultValue: true }
+		{ key: 'scoreEveryTurn', label: 'Score every turn after gravity resolves', defaultValue: true },
+		{ key: 'rotateGravityEachTurn', label: 'Rotate gravity every turn', defaultValue: false }
 	];
 
 	var geometryCache = {};
@@ -361,9 +362,13 @@ var GravityModel = (function () {
 		if (!canRotateGravity(game)) {
 			return false;
 		}
-		game.gravity = (game.gravity + 1) & 3;
+		advanceGravity(game);
 		game.rotatedThisTurn = true;
 		return true;
+	}
+
+	function advanceGravity(game) {
+		game.gravity = (game.gravity + 1) & 3;
 	}
 
 	function canPlaceAt(game, cell) {
@@ -426,6 +431,11 @@ var GravityModel = (function () {
 		game.activeSlot = nextActiveSlot(game, game.activeSlot);
 		game.rotatedThisTurn = false;
 		game.turnNumber++;
+		// The direction change alone restacks the board on the next placement,
+		// exactly as a manual rotation does.
+		if (game.rules.rotateGravityEachTurn) {
+			advanceGravity(game);
+		}
 	}
 
 	function nextActiveSlot(game, slot) {

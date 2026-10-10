@@ -191,6 +191,9 @@
 		if (game.rotatedThisTurn) {
 			return turn + ' · Gravity now falls ' + gravityText() + '. Place a mark.';
 		}
+		if (game.rules.rotateGravityEachTurn) {
+			return turn + ' · Gravity falls ' + gravityText() + ' now and rotates again after this turn. Place a mark.';
+		}
 		return turn + ' · Place a mark, or rotate gravity once.';
 	}
 

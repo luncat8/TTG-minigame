@@ -239,6 +239,55 @@ test('gravity rotates clockwise through down, left, up, right', () => {
 	assert.deepEqual(seen, [M.GRAVITY_DOWN, M.GRAVITY_LEFT, M.GRAVITY_UP, M.GRAVITY_RIGHT, M.GRAVITY_DOWN]);
 });
 
+test('gravity holds between turns when the every-turn rotation is off', () => {
+	const game = M.createGame({ size: 5 });
+	M.placeMark(game, 24);
+	assert.equal(game.gravity, M.GRAVITY_DOWN);
+});
+
+test('every-turn rotation advances gravity after each placement and passes the turn', () => {
+	const game = M.createGame({ size: 5, rules: rulesWith({ rotateGravityEachTurn: true }) });
+	const seen = [game.gravity];
+	for (let i = 0; i < 4; i++) {
+		assert.ok(M.placeMark(game, i) >= 0, 'every placement in this sequence is legal');
+		seen.push(game.gravity);
+		assert.equal(game.activeSlot, (i + 1) % 3);
+	}
+	assert.deepEqual(seen, [M.GRAVITY_DOWN, M.GRAVITY_LEFT, M.GRAVITY_UP, M.GRAVITY_RIGHT, M.GRAVITY_DOWN]);
+});
+
+test('every-turn rotation adds one step on top of the manual rotation and the limit resets', () => {
+	const game = M.createGame({ size: 5, rules: rulesWith({ rotateGravityEachTurn: true }) });
+	assert.equal(M.rotateGravity(game), true);
+	assert.equal(M.rotateGravity(game), false, 'manual rotation stays once per turn');
+	assert.equal(game.gravity, M.GRAVITY_LEFT);
+	M.placeMark(game, 0);
+	assert.equal(game.gravity, M.GRAVITY_UP, 'the turn rotation follows the manual one');
+	assert.equal(game.rotatedThisTurn, false);
+	assert.equal(M.rotateGravity(game), true, 'the next turn allows one manual rotation again');
+	assert.equal(game.gravity, M.GRAVITY_RIGHT);
+});
+
+test('enabling the every-turn rotation mid-game applies from the next turn', () => {
+	const game = M.createGame({ size: 5 });
+	M.placeMark(game, 24);
+	M.setRule(game, 'rotateGravityEachTurn', true);
+	assert.equal(game.gravity, M.GRAVITY_DOWN, 'the turn in progress is unaffected');
+	M.placeMark(game, 23);
+	assert.equal(game.gravity, M.GRAVITY_LEFT);
+});
+
+test('a full board ends the game without applying the turn rotation', () => {
+	const game = M.createGame({ size: 5, rules: rulesWith({ rotateGravityEachTurn: true }) });
+	for (let i = 0; i < game.board.cells.length; i++) {
+		game.board.cells[i] = i % 2 === 0 ? 1 : 2;
+	}
+	game.board.cells[12] = 0;
+	M.placeMark(game, 12);
+	assert.equal(game.over, true);
+	assert.equal(game.gravity, M.GRAVITY_DOWN);
+});
+
 test('placement settles toward the current gravity edge', () => {
 	const game = M.createGame({ size: 5 });
 	M.placeMark(game, 3);

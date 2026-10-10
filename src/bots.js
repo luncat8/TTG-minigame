@@ -47,10 +47,13 @@ var GravityBots = (function (M) {
 		return balance;
 	}
 
-	// Best points the next player can take in one turn from `trial`: they may keep or rotate gravity.
+	// Best points the next player can take in one turn from `trial`: they inherit
+	// the gravity the turn leaves them (rotated once more under the every-turn
+	// rule) and may still rotate once themselves.
 	function bestReplyGain(game, scratch, nextSlot, gravity) {
-		var keep = bestGainForGravity(game, scratch, nextSlot, gravity);
-		var rotate = bestGainForGravity(game, scratch, nextSlot, (gravity + 1) & 3);
+		var base = game.rules.rotateGravityEachTurn ? (gravity + 1) & 3 : gravity;
+		var keep = bestGainForGravity(game, scratch, nextSlot, base);
+		var rotate = bestGainForGravity(game, scratch, nextSlot, (base + 1) & 3);
 		return keep > rotate ? keep : rotate;
 	}
 
@@ -77,6 +80,11 @@ var GravityBots = (function (M) {
 		M.playOnBoard(scratch.trial, game.rules, gravity, cell, slot, scratch.points);
 		var gained = scratch.points[slot];
 		var conceded = sumOpponentPoints(scratch.points, slot);
+		// The forced rotation restacks every line before the next player moves,
+		// so standing is measured on the board they will actually face.
+		if (game.rules.rotateGravityEachTurn) {
+			M.settleBoard(scratch.trial, (gravity + 1) & 3);
+		}
 		M.detectMatches(scratch.trial, game.rules);
 		var standing = standingBalance(scratch.trial, slot);
 		var nextSlot = M.nextActiveSlot(game, slot);
@@ -135,7 +143,8 @@ var GravityBots = (function (M) {
 		chooseMove: chooseMove,
 		chooseGravityHeuristic: chooseGravityHeuristic,
 		evaluateCandidate: evaluateCandidate,
-		standingBalance: standingBalance
+		standingBalance: standingBalance,
+		scratchFor: scratchFor
 	};
 	return api;
 })(typeof module !== 'undefined' ? require('./model.js') : GravityModel);

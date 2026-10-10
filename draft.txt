@@ -22,4 +22,5 @@ list with checkboxes to enable game rules, default marked:
 [] remove after detect and count score point
 [x] remove any 4+ group, no diagonal. Note when score each turn and 3 not deleted then bot should be optimized to keep 3 groups without grow them to 4. this need to be tested to ensure this good, because may be need change 4 to 5 to avoid to often delete
 [x] score each turn after rotate gravity, especially useful as game mode when no 'remove' selected
+[] rotate gravity every turn
 

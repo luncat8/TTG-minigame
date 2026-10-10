@@ -127,3 +127,54 @@ test('self-play with the heuristic: every chosen move is legal and every game te
 		assert.equal(game.over, true);
 	}
 });
+
+test('self-play with the every-turn rotation keeps every chosen move legal', () => {
+	const rules = Object.assign(M.defaultRules(), { rotateGravityEachTurn: true });
+	for (const playerCount of [2, 3, 4, 5, 6]) {
+		const game = M.createGame({ size: 5, playerCount, rules });
+		let turns = 0;
+		while (!game.over && turns < 60) {
+			const move = B.chooseMove(game, B.DEFAULT_STRATEGY_ID);
+			assert.ok(M.canPlaceAt(game, move.cell), 'chosen cell is empty');
+			if (move.rotate) {
+				assert.equal(M.rotateGravity(game), true);
+			}
+			assert.ok(M.placeMark(game, move.cell) >= 0);
+			turns++;
+		}
+	}
+});
+
+// With few players the rotation keeps clearing groups as fast as they form, so
+// the symmetric bot game cycles without filling the board; four to six still end.
+test('self-play with the every-turn rotation terminates for four to six players', () => {
+	const rules = Object.assign(M.defaultRules(), { rotateGravityEachTurn: true });
+	for (const playerCount of [4, 5, 6]) {
+		const game = M.createGame({ size: 5, playerCount, rules });
+		let turns = 0;
+		while (!game.over && turns < 400) {
+			const move = B.chooseMove(game, B.DEFAULT_STRATEGY_ID);
+			assert.ok(M.canPlaceAt(game, move.cell), 'chosen cell is empty');
+			if (move.rotate) {
+				assert.equal(M.rotateGravity(game), true);
+			}
+			assert.ok(M.placeMark(game, move.cell) >= 0);
+			turns++;
+		}
+		assert.equal(game.over, true);
+	}
+});
+
+test('the every-turn rotation prices in the gravity the next player inherits', () => {
+	// Slot 1 owns a standing vertical three that is already in the snapshot, so it
+	// scores nothing while the board stays settled downward. Once gravity rotates,
+	// the same pieces realign into fresh windows the next player can still reach,
+	// which only the every-turn rule puts into the candidate's denial term.
+	const rows = ['.....', '.....', '2....', '2....', '2....'];
+	const options = { scoreEveryTurn: false, removeGroups: false };
+	const withRule = gameFrom(5, rows, Object.assign({ rotateGravityEachTurn: true }, options));
+	const withoutRule = gameFrom(5, rows, options);
+	const valueWith = B.evaluateCandidate(withRule, B.scratchFor(5), 0, M.GRAVITY_DOWN, 24);
+	const valueWithout = B.evaluateCandidate(withoutRule, B.scratchFor(5), 0, M.GRAVITY_DOWN, 24);
+	assert.ok(valueWith < valueWithout, 'the inherited rotation exposes the opponent to a reachable scoring gravity');
+});
