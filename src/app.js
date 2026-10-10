@@ -5,6 +5,7 @@
 	var BOT_DELAY_MS = 450;
 	var HUMAN = 'human';
 	var BOT = 'bot';
+	var GRAVITY_LABELS = ['Down ↓', 'Left ←', 'Up ↑', 'Right →'];
 
 	var game = GravityModel.createGame({});
 	var view = { hoverCell: -1, cursorCell: 0, showCursor: false, canPlace: false };
@@ -87,9 +88,22 @@
 	}
 
 	function buildSlotRow(slot, controllerOptions, strategyOptions) {
-		var row = document.createElement('tr');
+		var row = document.createElement('div');
+		row.className = 'player-row';
+		row.setAttribute('role', 'listitem');
+
 		var swatch = document.createElement('canvas');
 		swatch.className = 'swatch';
+		swatch.setAttribute('aria-hidden', 'true');
+
+		var identity = document.createElement('div');
+		var name = document.createElement('strong');
+		name.className = 'player-name';
+		name.textContent = slotName(slot);
+		var score = document.createElement('span');
+		score.className = 'score';
+		identity.appendChild(name);
+		identity.appendChild(score);
 
 		var controllerSelect = document.createElement('select');
 		controllerSelect.setAttribute('aria-label', slotName(slot) + ' controller');
@@ -99,33 +113,33 @@
 		strategySelect.setAttribute('aria-label', slotName(slot) + ' bot strategy');
 		fillSelect(strategySelect, strategyOptions);
 
+		var controls = document.createElement('div');
+		controls.className = 'player-controls';
+		controls.appendChild(labeledSelect('Controller', controllerSelect));
+		controls.appendChild(labeledSelect('Strategy', strategySelect));
+
 		var onSlotChange = function () {
 			onControllerChange(slot, controllerSelect.value, strategySelect.value);
 		};
 		controllerSelect.addEventListener('change', onSlotChange);
 		strategySelect.addEventListener('change', onSlotChange);
 
-		var score = document.createElement('td');
-		score.className = 'score';
-
-		appendCell(row, swatch);
-		var name = document.createElement('td');
-		name.className = 'name';
-		name.textContent = slotName(slot);
-		row.appendChild(name);
-		appendCell(row, controllerSelect);
-		appendCell(row, strategySelect);
-		row.appendChild(score);
+		row.appendChild(swatch);
+		row.appendChild(identity);
+		row.appendChild(controls);
 		el.slots.appendChild(row);
 		// Drawn after attaching so the canvas has its CSS size.
 		GravityRender.renderSwatch(swatch, slot);
 		return { row: row, controller: controllerSelect, strategy: strategySelect, score: score };
 	}
 
-	function appendCell(row, node) {
-		var cell = document.createElement('td');
-		cell.appendChild(node);
-		row.appendChild(cell);
+	function labeledSelect(caption, select) {
+		var label = document.createElement('label');
+		var text = document.createElement('span');
+		text.textContent = caption;
+		label.appendChild(text);
+		label.appendChild(select);
+		return label;
 	}
 
 	function updateSlotRows() {
@@ -145,7 +159,8 @@
 		rowView.controller.disabled = !active;
 		rowView.strategy.value = state.strategy || GravityBots.DEFAULT_STRATEGY_ID;
 		rowView.strategy.disabled = !active || state.controller !== BOT;
-		rowView.score.textContent = active ? String(state.score) : state.score + ' (inactive)';
+		var points = state.score + (state.score === 1 ? ' point' : ' points');
+		rowView.score.textContent = active ? points : points + ' · inactive';
 	}
 
 	function updateRuleBoxes() {
@@ -160,19 +175,23 @@
 		return GravityModel.GRAVITY_NAMES[game.gravity];
 	}
 
+	function activePlayerText() {
+		return GravityRender.SYMBOLS[game.activeSlot] + ' · ' + slotName(game.activeSlot);
+	}
+
 	function statusText() {
 		if (game.over) {
 			return gameOverText();
 		}
 		var slot = game.slots[game.activeSlot];
-		var turn = slotName(game.activeSlot);
+		var turn = activePlayerText();
 		if (slot.controller === BOT) {
-			return turn + ' (' + strategyLabel(slot.strategy) + ') is thinking. Gravity: ' + gravityText() + '.';
+			return turn + ' is thinking with ' + strategyLabel(slot.strategy) + '.';
 		}
-		var rotation = game.rotatedThisTurn
-			? 'Gravity already changed this turn.'
-			: 'You may rotate gravity once before placing.';
-		return turn + ', your turn. Gravity: ' + gravityText() + '. ' + rotation + ' Click an empty cell to place.';
+		if (game.rotatedThisTurn) {
+			return turn + ' · Gravity now falls ' + gravityText() + '. Place a mark.';
+		}
+		return turn + ' · Place a mark, or rotate gravity once.';
 	}
 
 	function gameOverText() {
@@ -185,7 +204,12 @@
 		return 'Game over. Tie between ' + names + ' at ' + score + ' points. Press Clean to play again.';
 	}
 
-	function updateButtons() {
+	function updateGravityControls() {
+		var nextGravity = (game.gravity + 1) & 3;
+		el.gravityReadout.textContent = 'Gravity ' + GRAVITY_LABELS[game.gravity];
+		el.rotate.textContent = game.rotatedThisTurn
+			? 'Gravity rotated'
+			: 'Rotate to ' + GRAVITY_LABELS[nextGravity];
 		el.rotate.disabled = !isHumanTurn() || game.rotatedThisTurn;
 	}
 
@@ -199,7 +223,7 @@
 		el.status.textContent = statusText();
 		updateSlotRows();
 		updateRuleBoxes();
-		updateButtons();
+		updateGravityControls();
 	}
 
 	// Every state change renders and then lets the next bot turn start.
@@ -378,6 +402,7 @@
 	function init() {
 		el.board = $('board');
 		el.status = $('status');
+		el.gravityReadout = $('gravity-readout');
 		el.rotate = $('rotate');
 		el.clean = $('clean');
 		el.playerCount = $('player-count');

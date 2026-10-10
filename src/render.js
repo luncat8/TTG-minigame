@@ -1,31 +1,43 @@
-// Canvas drawing for the board and the player swatches. Drawing runs on state changes only.
+// Canvas drawing for the board and player swatches. Drawing runs on state changes only.
 var GravityRender = (function (M) {
 	'use strict';
 
-	var MARGIN_RATIO = 0.1;
+	var MARGIN_RATIO = 0.09;
 	var PALETTE = [
-		{ fill: '#ffc8d4', ink: '#8c2f4b' },
-		{ fill: '#ffe2b8', ink: '#8a5216' },
-		{ fill: '#fff3a3', ink: '#6d5d08' },
-		{ fill: '#bff0cf', ink: '#1f6b43' },
-		{ fill: '#bfe3ff', ink: '#1f5a8a' },
-		{ fill: '#dcc8ff', ink: '#5b3a92' }
+		{ fill: '#f8dce5', ink: '#713347' },
+		{ fill: '#dcecf8', ink: '#2e5670' },
+		{ fill: '#dff1e5', ink: '#315d41' },
+		{ fill: '#eee2f7', ink: '#5e446f' },
+		{ fill: '#fff0c7', ink: '#735f20' },
+		{ fill: '#f8dec9', ink: '#744a2e' }
 	];
-	var SHAPES = ['circle', 'square', 'triangle', 'diamond', 'star', 'cross'];
-	var BACKGROUND = '#f4f6fb';
+	var SYMBOLS = ['X', 'O', '△', '□', '☆', '+'];
+	var BACKGROUND = '#f7f4f8';
 	var EMPTY_FILL = '#ffffff';
-	var GRID_LINE = '#cfd6e4';
-	var GRAVITY_COLOR = '#f2a900';
-	var CURSOR_COLOR = '#2b3a55';
-	var GHOST_ALPHA = 0.35;
+	var GRID_LINE = '#d8d1dc';
+	var GRAVITY_COLOR = '#77618b';
+	var CURSOR_COLOR = '#3e3448';
+	var GHOST_ALPHA = 0.55;
 	var DIRECTION_X = [0, -1, 0, 1];
 	var DIRECTION_Y = [1, 0, -1, 0];
-	var STAR_POINTS = 5;
+
+	function clamp(value, min, max) {
+		return value < min ? min : value > max ? max : value;
+	}
 
 	function layoutFor(side, size) {
 		var margin = side * MARGIN_RATIO;
 		var board = side - 2 * margin;
-		return { side: side, size: size, margin: margin, board: board, cell: board / size };
+		var cell = board / size;
+		return {
+			side: side,
+			size: size,
+			margin: margin,
+			board: board,
+			cell: cell,
+			gap: clamp(cell * 0.1, 3, 7),
+			radius: clamp(cell * 0.16, 5, 11)
+		};
 	}
 
 	// Returns the cell index under a point in CSS pixels, or -1 outside the board.
@@ -39,70 +51,49 @@ var GravityRender = (function (M) {
 		return row * size + col;
 	}
 
-	function tracePath(ctx, shape, cx, cy, r) {
+	function traceRoundedRect(ctx, x, y, width, height, radius) {
+		var r = Math.min(radius, width / 2, height / 2);
 		ctx.beginPath();
-		if (shape === 'circle') {
-			ctx.arc(cx, cy, r, 0, Math.PI * 2);
-		} else if (shape === 'square') {
-			ctx.rect(cx - r * 0.85, cy - r * 0.85, r * 1.7, r * 1.7);
-		} else if (shape === 'triangle') {
-			ctx.moveTo(cx, cy - r);
-			ctx.lineTo(cx + r * 0.9, cy + r * 0.7);
-			ctx.lineTo(cx - r * 0.9, cy + r * 0.7);
-		} else if (shape === 'diamond') {
-			ctx.moveTo(cx, cy - r);
-			ctx.lineTo(cx + r, cy);
-			ctx.lineTo(cx, cy + r);
-			ctx.lineTo(cx - r, cy);
-		} else if (shape === 'star') {
-			traceStar(ctx, cx, cy, r);
-		} else {
-			tracePlus(ctx, cx, cy, r);
-		}
+		ctx.moveTo(x + r, y);
+		ctx.lineTo(x + width - r, y);
+		ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+		ctx.lineTo(x + width, y + height - r);
+		ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+		ctx.lineTo(x + r, y + height);
+		ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+		ctx.lineTo(x, y + r);
+		ctx.quadraticCurveTo(x, y, x + r, y);
 		ctx.closePath();
 	}
 
-	function traceStar(ctx, cx, cy, r) {
-		var steps = STAR_POINTS * 2;
-		for (var i = 0; i < steps; i++) {
-			var radius = i % 2 === 0 ? r : r * 0.45;
-			var angle = -Math.PI / 2 + (i * Math.PI) / STAR_POINTS;
-			var x = cx + Math.cos(angle) * radius;
-			var y = cy + Math.sin(angle) * radius;
-			if (i === 0) {
-				ctx.moveTo(x, y);
-			} else {
-				ctx.lineTo(x, y);
-			}
-		}
-	}
-
-	function tracePlus(ctx, cx, cy, r) {
-		var arm = r * 0.36;
-		ctx.moveTo(cx - arm, cy - r);
-		ctx.lineTo(cx + arm, cy - r);
-		ctx.lineTo(cx + arm, cy - arm);
-		ctx.lineTo(cx + r, cy - arm);
-		ctx.lineTo(cx + r, cy + arm);
-		ctx.lineTo(cx + arm, cy + arm);
-		ctx.lineTo(cx + arm, cy + r);
-		ctx.lineTo(cx - arm, cy + r);
-		ctx.lineTo(cx - arm, cy + arm);
-		ctx.lineTo(cx - r, cy + arm);
-		ctx.lineTo(cx - r, cy - arm);
-		ctx.lineTo(cx - arm, cy - arm);
-	}
-
-	function drawSymbol(ctx, slot, cx, cy, r) {
-		tracePath(ctx, SHAPES[slot], cx, cy, r);
-		ctx.fillStyle = PALETTE[slot].ink;
+	function drawTile(ctx, layout, x, y, fill, line) {
+		var inset = layout.gap / 2;
+		var side = layout.cell - layout.gap;
+		traceRoundedRect(ctx, x + inset, y + inset, side, side, layout.radius);
+		ctx.fillStyle = fill;
 		ctx.fill();
+		ctx.strokeStyle = line;
+		ctx.lineWidth = 1;
+		ctx.stroke();
 	}
 
-	function drawCellFrame(ctx, x, y, cell, color, lineWidth) {
+	function drawSymbol(ctx, slot, cx, cy, radius) {
+		ctx.fillStyle = PALETTE[slot].ink;
+		ctx.font = '700 ' + Math.round(radius * 2) + 'px "Trebuchet MS", "Segoe UI Symbol", system-ui, sans-serif';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillText(SYMBOLS[slot], cx, cy + radius * 0.04);
+	}
+
+	function drawCellFrame(ctx, layout, index, color, lineWidth) {
+		var x = layout.margin + (index % layout.size) * layout.cell;
+		var y = layout.margin + Math.floor(index / layout.size) * layout.cell;
+		var inset = layout.gap / 2 + lineWidth / 2;
+		var side = layout.cell - layout.gap - lineWidth;
+		traceRoundedRect(ctx, x + inset, y + inset, side, side, layout.radius);
 		ctx.strokeStyle = color;
 		ctx.lineWidth = lineWidth;
-		ctx.strokeRect(x + 3, y + 3, cell - 6, cell - 6);
+		ctx.stroke();
 	}
 
 	function drawCells(ctx, layout, game) {
@@ -114,35 +105,38 @@ var GravityRender = (function (M) {
 				var owner = cells[row * size + col];
 				var x = layout.margin + col * cell;
 				var y = layout.margin + row * cell;
-				ctx.fillStyle = owner === 0 ? EMPTY_FILL : PALETTE[owner - 1].fill;
-				ctx.fillRect(x, y, cell, cell);
-				ctx.strokeStyle = GRID_LINE;
-				ctx.lineWidth = 1;
-				ctx.strokeRect(x + 0.5, y + 0.5, cell - 1, cell - 1);
+				var fill = owner === 0 ? EMPTY_FILL : PALETTE[owner - 1].fill;
+				drawTile(ctx, layout, x, y, fill, GRID_LINE);
 				if (owner !== 0) {
-					drawSymbol(ctx, owner - 1, x + cell / 2, y + cell / 2, cell * 0.32);
+					drawSymbol(ctx, owner - 1, x + cell / 2, y + cell / 2, cell * 0.28);
 				}
 			}
 		}
 	}
 
-	function cellCenter(layout, index, axis) {
-		var along = index % layout.size;
-		var across = Math.floor(index / layout.size);
-		return layout.margin + (axis === 0 ? along : across) * layout.cell + layout.cell / 2;
+	function drawGhost(ctx, layout, game, target) {
+		var cell = layout.cell;
+		var x = layout.margin + (target % layout.size) * cell;
+		var y = layout.margin + Math.floor(target / layout.size) * cell;
+		ctx.globalAlpha = GHOST_ALPHA;
+		drawTile(ctx, layout, x, y, PALETTE[game.activeSlot].fill, GRID_LINE);
+		drawSymbol(ctx, game.activeSlot, x + cell / 2, y + cell / 2, cell * 0.28);
+		ctx.globalAlpha = 1;
 	}
 
 	function drawHover(ctx, layout, game, view) {
-		var hover = view.hoverCell;
-		if (hover >= 0 && M.isCellEmpty(game, hover) && view.canPlace) {
-			ctx.globalAlpha = GHOST_ALPHA;
-			drawSymbol(ctx, game.activeSlot, cellCenter(layout, hover, 0), cellCenter(layout, hover, 1), layout.cell * 0.32);
-			ctx.globalAlpha = 1;
+		var source = view.hoverCell;
+		if (source < 0 && view.showCursor) {
+			source = view.cursorCell;
+		}
+		if (source >= 0 && view.canPlace) {
+			var target = M.placementTarget(game, source);
+			if (target >= 0) {
+				drawGhost(ctx, layout, game, target);
+			}
 		}
 		if (view.showCursor && view.cursorCell >= 0) {
-			var x = layout.margin + (view.cursorCell % layout.size) * layout.cell;
-			var y = layout.margin + Math.floor(view.cursorCell / layout.size) * layout.cell;
-			drawCellFrame(ctx, x, y, layout.cell, CURSOR_COLOR, 2.5);
+			drawCellFrame(ctx, layout, view.cursorCell, CURSOR_COLOR, 2.5);
 		}
 	}
 
@@ -150,7 +144,7 @@ var GravityRender = (function (M) {
 	function drawGravity(ctx, layout, gravity) {
 		var dx = DIRECTION_X[gravity];
 		var dy = DIRECTION_Y[gravity];
-		var bar = 4;
+		var bar = clamp(layout.cell * 0.08, 4, 6);
 		var x = layout.margin;
 		var y = layout.margin;
 		var width = layout.board;
@@ -171,7 +165,7 @@ var GravityRender = (function (M) {
 	function drawGravityArrow(ctx, layout, dx, dy) {
 		var px = -dy;
 		var py = dx;
-		var reach = layout.margin * 0.36;
+		var reach = layout.margin * 0.34;
 		var cx = layout.side / 2 + dx * (layout.board / 2 + layout.margin / 2);
 		var cy = layout.side / 2 + dy * (layout.board / 2 + layout.margin / 2);
 		ctx.beginPath();
@@ -184,10 +178,10 @@ var GravityRender = (function (M) {
 	}
 
 	function drawFullOverlay(ctx, layout) {
-		ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+		ctx.fillStyle = 'rgba(255, 255, 255, 0.74)';
 		ctx.fillRect(layout.margin, layout.margin, layout.board, layout.board);
 		ctx.fillStyle = CURSOR_COLOR;
-		ctx.font = '600 ' + Math.round(layout.cell * 0.7) + 'px system-ui, sans-serif';
+		ctx.font = '700 ' + Math.round(clamp(layout.cell * 0.68, 18, 36)) + 'px system-ui, sans-serif';
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
 		ctx.fillText('Board full', layout.side / 2, layout.side / 2);
@@ -230,14 +224,19 @@ var GravityRender = (function (M) {
 		var prepared = prepareContext(canvas);
 		var ctx = prepared.ctx;
 		var side = prepared.side;
+		ctx.clearRect(0, 0, side, side);
+		traceRoundedRect(ctx, 0.5, 0.5, side - 1, side - 1, side * 0.24);
 		ctx.fillStyle = PALETTE[slot].fill;
-		ctx.fillRect(0, 0, side, side);
-		drawSymbol(ctx, slot, side / 2, side / 2, side * 0.32);
+		ctx.fill();
+		ctx.strokeStyle = GRID_LINE;
+		ctx.stroke();
+		drawSymbol(ctx, slot, side / 2, side / 2, side * 0.28);
 	}
 
 	var api = {
 		PALETTE: PALETTE,
-		SHAPES: SHAPES,
+		SYMBOLS: SYMBOLS,
+		BACKGROUND: BACKGROUND,
 		cellAt: cellAt,
 		renderBoard: renderBoard,
 		renderSwatch: renderSwatch

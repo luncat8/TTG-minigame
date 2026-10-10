@@ -3,39 +3,57 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#f7f4f8">
 	<title>Gravity Grid</title>
 	<link rel="stylesheet" href="style.css">
 </head>
 <body>
-	<main class="layout">
-		<section class="board-panel">
-			<h1>Gravity Grid</h1>
-			<canvas id="board" class="board" tabindex="0" role="img" aria-label="Game board. Click an empty cell to place your symbol. Keyboard: arrow keys move the cursor, Enter places, R rotates gravity."></canvas>
-			<p id="status" class="status" aria-live="polite"></p>
-			<div class="actions">
-				<button id="rotate" type="button">Rotate gravity (R)</button>
-				<button id="clean" type="button">Clean</button>
+	<main class="shell">
+		<header class="hero">
+			<div>
+				<p class="kicker">A shifting strategy game</p>
+				<h1>Gravity Grid</h1>
+				<p class="intro">Place a mark, build lines of three, and use changing gravity to reshape the board.</p>
 			</div>
-		</section>
-		<aside class="side-panel">
-			<fieldset class="settings">
-				<legend>Game</legend>
-				<label>Players <select id="player-count"></select></label>
-				<label>Board size <select id="board-size"></select></label>
-			</fieldset>
-			<fieldset class="rules" id="rules">
-				<legend>Rules</legend>
-			</fieldset>
-			<fieldset class="players">
-				<legend>Players</legend>
-				<table>
-					<thead>
-						<tr><th>Symbol</th><th>Player</th><th>Controller</th><th>Strategy</th><th>Score</th></tr>
-					</thead>
-					<tbody id="slots"></tbody>
-				</table>
-			</fieldset>
-		</aside>
+			<p id="gravity-readout" class="gravity-readout" aria-live="polite"></p>
+		</header>
+
+		<div class="layout">
+			<section class="board-panel" aria-labelledby="play-heading">
+				<div class="panel-heading">
+					<div>
+						<p class="section-label">Current turn</p>
+						<h2 id="play-heading">Play</h2>
+					</div>
+					<p id="status" class="status" aria-live="polite"></p>
+				</div>
+				<canvas id="board" class="board" tabindex="0" role="img" aria-label="Game board. Click an empty cell to place your symbol. Keyboard: arrow keys move the cursor, Enter places, R rotates gravity."></canvas>
+				<div class="actions">
+					<button id="rotate" class="primary-action" type="button">Rotate gravity</button>
+					<button id="clean" class="quiet-action" type="button">Clean board</button>
+					<span class="key-hint"><kbd>R</kbd> rotate · <kbd>Enter</kbd> place</span>
+				</div>
+			</section>
+
+			<aside class="side-panel" aria-label="Game controls">
+				<fieldset class="settings card">
+					<legend>Game setup</legend>
+					<div class="setting-grid">
+						<label><span>Players</span><select id="player-count"></select></label>
+						<label><span>Board size</span><select id="board-size"></select></label>
+					</div>
+				</fieldset>
+
+				<fieldset class="rules card" id="rules">
+					<legend>Rules</legend>
+				</fieldset>
+
+				<fieldset class="players card">
+					<legend>Players</legend>
+					<div id="slots" class="slot-list" role="list"></div>
+				</fieldset>
+			</aside>
+		</div>
 	</main>
 	<script src="src/model.js"></script>
 	<script src="src/bots.js"></script>

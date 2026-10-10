@@ -245,6 +245,29 @@ test('placement settles toward the current gravity edge', () => {
 	assert.equal(game.board.cells[4 * 5 + 3], 1);
 });
 
+test('placement target previews the settled destination in every gravity', () => {
+	const cases = [
+		{ gravity: M.GRAVITY_DOWN, source: 2, target: 22 },
+		{ gravity: M.GRAVITY_LEFT, source: 14, target: 10 },
+		{ gravity: M.GRAVITY_UP, source: 22, target: 2 },
+		{ gravity: M.GRAVITY_RIGHT, source: 10, target: 14 }
+	];
+	for (const item of cases) {
+		const game = M.createGame({ size: 5 });
+		game.gravity = item.gravity;
+		assert.equal(M.placementTarget(game, item.source), item.target);
+	}
+});
+
+test('placement target respects stable order on an unsettled line', () => {
+	const game = M.createGame({ size: 5 });
+	game.gravity = M.GRAVITY_LEFT;
+	game.board.cells[2 * 5] = 1;
+	game.board.cells[2 * 5 + 3] = 2;
+	assert.equal(M.placementTarget(game, 2 * 5 + 2), 2 * 5 + 1);
+	assert.equal(M.placementTarget(game, 2 * 5), -1, 'an occupied source is illegal');
+});
+
 test('placing on an occupied cell is rejected without changing the turn', () => {
 	const game = M.createGame({ size: 5 });
 	M.placeMark(game, 24);

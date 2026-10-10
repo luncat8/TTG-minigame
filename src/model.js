@@ -370,6 +370,37 @@ var GravityModel = (function () {
 		return !game.over && cell >= 0 && cell < game.board.cells.length && isCellEmpty(game, cell);
 	}
 
+	// Returns where a newly placed mark will land after stable settling, or -1
+	// when the source cell is not a legal placement.
+	function placementTarget(game, cell) {
+		if (!canPlaceAt(game, cell)) {
+			return -1;
+		}
+		var board = game.board;
+		var size = board.size;
+		var row = Math.floor(cell / size);
+		var column = cell % size;
+		var line = game.gravity === GRAVITY_DOWN || game.gravity === GRAVITY_UP ? column : row;
+		var distance;
+		if (game.gravity === GRAVITY_DOWN) {
+			distance = size - 1 - row;
+		} else if (game.gravity === GRAVITY_LEFT) {
+			distance = column;
+		} else if (game.gravity === GRAVITY_UP) {
+			distance = row;
+		} else {
+			distance = size - 1 - column;
+		}
+		var lineBase = game.gravity * size * size + line * size;
+		var occupiedBefore = 0;
+		for (var k = 0; k < distance; k++) {
+			if (board.cells[board.geometry.lines[lineBase + k]] !== 0) {
+				occupiedBefore++;
+			}
+		}
+		return board.geometry.lines[lineBase + occupiedBefore];
+	}
+
 	// Returns the turn's removed count, or -1 for an illegal placement.
 	function placeMark(game, cell) {
 		if (!canPlaceAt(game, cell)) {
@@ -499,6 +530,7 @@ var GravityModel = (function () {
 		canRotateGravity: canRotateGravity,
 		rotateGravity: rotateGravity,
 		canPlaceAt: canPlaceAt,
+		placementTarget: placementTarget,
 		placeMark: placeMark,
 		nextActiveSlot: nextActiveSlot,
 		setPlayerCount: setPlayerCount,
