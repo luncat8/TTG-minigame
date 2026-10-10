@@ -1,0 +1,8 @@
+{
+	"name": "ttg-minigame",
+	"private": true,
+	"description": "Gravity-grid minigame: pure rules model, bot, and canvas page.",
+	"scripts": {
+		"test": "node --test test/model.test.js test/bots.test.js"
+	}
+}

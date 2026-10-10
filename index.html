@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Gravity Grid</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<main class="layout">
+		<section class="board-panel">
+			<h1>Gravity Grid</h1>
+			<canvas id="board" class="board" tabindex="0" role="img" aria-label="Game board. Click an empty cell to place your symbol. Keyboard: arrow keys move the cursor, Enter places, R rotates gravity."></canvas>
+			<p id="status" class="status" aria-live="polite"></p>
+			<div class="actions">
+				<button id="rotate" type="button">Rotate gravity (R)</button>
+				<button id="clean" type="button">Clean</button>
+			</div>
+		</section>
+		<aside class="side-panel">
+			<fieldset class="settings">
+				<legend>Game</legend>
+				<label>Players <select id="player-count"></select></label>
+				<label>Board size <select id="board-size"></select></label>
+			</fieldset>
+			<fieldset class="rules" id="rules">
+				<legend>Rules</legend>
+			</fieldset>
+			<fieldset class="players">
+				<legend>Players</legend>
+				<table>
+					<thead>
+						<tr><th>Symbol</th><th>Player</th><th>Controller</th><th>Strategy</th><th>Score</th></tr>
+					</thead>
+					<tbody id="slots"></tbody>
+				</table>
+			</fieldset>
+		</aside>
+	</main>
+	<script src="src/model.js"></script>
+	<script src="src/bots.js"></script>
+	<script src="src/render.js"></script>
+	<script src="src/app.js"></script>
+</body>
+</html>

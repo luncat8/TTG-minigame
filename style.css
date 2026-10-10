@@ -1,0 +1,176 @@
+:root {
+	--ink: #26324a;
+	--muted: #6b7690;
+	--panel: #ffffff;
+	--page: #eef1f7;
+	--accent: #f2a900;
+	--line: #d6dcea;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	padding: 24px;
+	font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+	color: var(--ink);
+	background: var(--page);
+}
+
+.layout {
+	display: grid;
+	grid-template-columns: minmax(280px, 560px) minmax(360px, 430px);
+	gap: 24px;
+	align-items: start;
+	justify-content: center;
+}
+
+.board-panel,
+.side-panel fieldset {
+	background: var(--panel);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 16px 20px;
+}
+
+.board-panel h1 {
+	margin: 0 0 12px;
+	font-size: 22px;
+}
+
+.board {
+	display: block;
+	width: 100%;
+	max-width: 560px;
+	aspect-ratio: 1;
+	border-radius: 8px;
+	background: #f4f6fb;
+	cursor: pointer;
+	outline: none;
+}
+
+.board:focus-visible {
+	box-shadow: 0 0 0 3px rgba(43, 58, 85, 0.35);
+}
+
+.status {
+	min-height: 3em;
+	margin: 12px 0;
+}
+
+.actions {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+button,
+select {
+	font: inherit;
+	color: inherit;
+	padding: 6px 10px;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: #fff;
+}
+
+button {
+	cursor: pointer;
+}
+
+button:disabled,
+select:disabled {
+	cursor: not-allowed;
+	opacity: 0.55;
+}
+
+.side-panel {
+	display: grid;
+	gap: 16px;
+}
+
+.side-panel fieldset {
+	margin: 0;
+}
+
+.side-panel legend {
+	font-weight: 600;
+	padding: 0 6px;
+}
+
+.settings label,
+.rules label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 6px 0;
+}
+
+.settings select {
+	margin-left: auto;
+}
+
+.rules input {
+	margin: 0;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+th,
+td {
+	padding: 6px 4px;
+	text-align: left;
+	border-bottom: 1px solid var(--line);
+	vertical-align: middle;
+}
+
+th {
+	font-size: 12px;
+	color: var(--muted);
+	font-weight: 600;
+}
+
+td.score {
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.swatch {
+	display: block;
+	width: 28px;
+	height: 28px;
+	border-radius: 6px;
+}
+
+tr.on-turn {
+	background: #fff8dc;
+}
+
+tr.inactive {
+	color: var(--muted);
+}
+
+tr.inactive select {
+	opacity: 0.6;
+}
+
+td select {
+	width: 100%;
+	min-width: 90px;
+}
+
+td.name {
+	white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+	.layout {
+		grid-template-columns: 1fr;
+	}
+}

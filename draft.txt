@@ -1,0 +1,25 @@
+html js
+1 tab indent
+
+player rotate board
+gravity
+player place his symbol
+
+
+select number of players, default 3.
+select board size, default 7.
+changes apply immediately without clean board
+button clean
+dropdown near player to select user or bot and what bot from implemented. implement a bot.
+
+symbols bg pastel color
+
+better do not rotate board but change only gravity and highlight 'bottom' side
+
+list with checkboxes to enable game rules, default marked:
+[x] 1 point for 3 in row linear (V, H)
+[] 1 point for 3 in row diagonal
+[] remove after detect and count score point
+[x] remove any 4+ group, no diagonal. Note when score each turn and 3 not deleted then bot should be optimized to keep 3 groups without grow them to 4. this need to be tested to ensure this good, because may be need change 4 to 5 to avoid to often delete
+[x] score each turn after rotate gravity, especially useful as game mode when no 'remove' selected
+

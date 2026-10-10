@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Gravity Rush — 3 in row</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<header>
+		<h1>Gravity Rush</h1>
+		<p class="sub">Players take turns placing a symbol; it falls toward the highlighted "bottom" side (current gravity). Every turn gravity rotates 90° and the whole board collapses toward the new side. Lines of 3 score points, groups of 4+ vanish. Add bots, tune the rules, clean the board.</p>
+	</header>
+
+	<section class="controls">
+		<label>Players <select id="playerCount"></select></label>
+		<label>Board size <select id="boardSize"></select></label>
+		<button type="button" id="clean" class="clean">Clean board</button>
+		<span class="grav-label">Gravity <b id="gravArrow">&#8595;</b></span>
+	</section>
+
+	<section class="rules">
+		<label><input type="checkbox" id="rLine" checked> 1 point for 3 in row linear (V, H)</label>
+		<label><input type="checkbox" id="rDiag"> 1 point for 3 in row diagonal</label>
+		<label><input type="checkbox" id="rRemove" checked> remove after detect and count score point</label>
+		<label><input type="checkbox" id="rBig" checked> remove any 4+ group, no diagonal</label>
+		<label><input type="checkbox" id="rAfter" checked> score each turn after rotate gravity</label>
+	</section>
+
+	<main class="layout">
+		<div class="board-wrap">
+			<span class="arrow a-up" id="arUp">&#8593;</span>
+			<span class="arrow a-right" id="arRight">&#8594;</span>
+			<span class="arrow a-down" id="arDown">&#8595;</span>
+			<span class="arrow a-left" id="arLeft">&#8592;</span>
+			<div class="board grav-down" id="board"></div>
+		</div>
+		<div class="side">
+			<div class="players" id="players"></div>
+			<p class="status" id="status"></p>
+			<div class="log" id="log"></div>
+		</div>
+	</main>
+
+	<script src="game.js"></script>
+</body>
+</html>

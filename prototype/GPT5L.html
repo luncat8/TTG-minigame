@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Gravity Tic-Tac-Toe</title>
+	<style>
+		:root {
+			--cell-size: 70px;
+			--gap: 6px;
+		}
+
+		body {
+			font-family: sans-serif;
+			text-align: center;
+			background: #f7f4f8;
+			color: #333;
+			padding: 20px;
+		}
+
+		.controls {
+			display: flex;
+			justify-content: center;
+			flex-wrap: wrap;
+			gap: 16px;
+			margin: 20px 0;
+		}
+
+		label {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		select,
+		button {
+			padding: 9px 12px;
+			font-size: 16px;
+		}
+
+		button {
+			cursor: pointer;
+		}
+
+		#board {
+			display: grid;
+			gap: var(--gap);
+			width: max-content;
+			margin: 20px auto;
+		}
+
+		.cell {
+			width: var(--cell-size);
+			height: var(--cell-size);
+			display: grid;
+			place-items: center;
+			background: white;
+			border: 2px solid #d8d1dc;
+			border-radius: 10px;
+			font-size: calc(var(--cell-size) * 0.55);
+			font-weight: bold;
+			cursor: pointer;
+			user-select: none;
+		}
+
+		.cell:hover {
+			filter: brightness(0.97);
+		}
+
+		.cell.player-0 {
+			background: #f8dce5;
+		}
+
+		.cell.player-1 {
+			background: #dcecf8;
+		}
+
+		.cell.player-2 {
+			background: #dff1e5;
+		}
+
+		.cell.player-3 {
+			background: #eee2f7;
+		}
+
+		.cell.gravity-edge {
+			border-color: #77618b;
+			box-shadow: inset 0 0 0 2px #cdb9df;
+		}
+
+		#gravityButton {
+			min-width: 180px;
+		}
+	</style>
+</head>
+<body>
+	<h1>Gravity Tic-Tac-Toe</h1>
+
+	<div class="controls">
+		<label>
+			Players
+			<select id="playerSelect">
+				<option value="2">2 players</option>
+				<option value="3">3 players</option>
+				<option value="4">4 players</option>
+			</select>
+		</label>
+
+		<label>
+			Board size
+			<select id="sizeSelect">
+				<option value="3">3 × 3</option>
+				<option value="4">4 × 4</option>
+				<option value="5">5 × 5</option>
+				<option value="6">6 × 6</option>
+				<option value="7">7 × 7</option>
+				<option value="8">8 × 8</option>
+			</select>
+		</label>
+	</div>
+
+	<p id="status"></p>
+	<div id="board"></div>
+
+	<button id="gravityButton">Gravity: Down ↓</button>
+	<button id="resetButton">New Game</button>
+
+	<script>
+		const boardElement = document.querySelector("#board");
+		const statusElement = document.querySelector("#status");
+		const playerSelect = document.querySelector("#playerSelect");
+		const sizeSelect = document.querySelector("#sizeSelect");
+		const gravityButton = document.querySelector("#gravityButton");
+		const resetButton = document.querySelector("#resetButton");
+
+		const symbols = ["X", "O", "△", "□"];
+		const gravityDirections = ["down", "left", "up", "right"];
+		const gravityLabels = {
+			down: "Down ↓",
+			left: "Left ←",
+			up: "Up ↑",
+			right: "Right →"
+		};
+
+		let board;
+		let boardSize;
+		let playerCount;
+		let currentPlayer;
+		let gravity;
+		let gameOver;
+
+		function startGame() {
+			boardSize = Number(sizeSelect.value);
+			playerCount = Number(playerSelect.value);
+			currentPlayer = 0;
+			gravity = "down";
+			gameOver = false;
+
+			board = Array.from(
+				{ length: boardSize },
+				() => Array(boardSize).fill(-1)
+			);
+
+			const cellSize = Math.max(34, Math.min(70, 420 / boardSize));
+			document.documentElement.style.setProperty("--cell-size", `${cellSize}px`);
+			boardElement.style.gridTemplateColumns =
+				`repeat(${boardSize}, var(--cell-size))`;
+
+			render();
+		}
+
+		function render() {
+			boardElement.innerHTML = "";
+
+			for (let row = 0; row < boardSize; row++) {
+				for (let col = 0; col < boardSize; col++) {
+					const cell = document.createElement("div");
+					const player = board[row][col];
+
+					cell.className = "cell";
+					cell.dataset.row = row;
+					cell.dataset.col = col;
+
+					if (player !== -1) {
+						cell.textContent = symbols[player];
+						cell.classList.add(`player-${player}`);
+					}
+
+					if (isGravityEdge(row, col)) {
+						cell.classList.add("gravity-edge");
+					}
+
+					boardElement.appendChild(cell);
+				}
+			}
+
+			gravityButton.textContent = `Gravity: ${gravityLabels[gravity]}`;
+
+			statusElement.textContent = gameOver
+				? "Game over!"
+				: `Player ${currentPlayer + 1} (${symbols[currentPlayer]}): choose a lane`;
+		}
+
+		function isGravityEdge(row, col) {
+			if (gravity === "down") return row === boardSize - 1;
+			if (gravity === "up") return row === 0;
+			if (gravity === "left") return col === 0;
+			return col === boardSize - 1;
+		}
+
+		function dropSymbol(row, col) {
+			if (gameOver) return;
+
+			const lane = gravity === "down" || gravity === "up"
+				? col
+				: row;
+
+			const positions = getLanePositions(lane);
+
+			for (const [targetRow, targetCol] of positions) {
+				if (board[targetRow][targetCol] === -1) {
+					board[targetRow][targetCol] = currentPlayer;
+
+					if (hasWinner(currentPlayer)) {
+						gameOver = true;
+						render();
+						statusElement.textContent =
+							`Player ${currentPlayer + 1} (${symbols[currentPlayer]}) wins!`;
+						return;
+					}
+
+					if (board.flat().every(cell => cell !== -1)) {
+						gameOver = true;
+						render();
+						statusElement.textContent = "It's a draw!";
+						return;
+					}
+
+					currentPlayer = (currentPlayer + 1) % playerCount;
+					render();
+					return;
+				}
+			}
+		}
+
+		function getLanePositions(lane) {
+			const positions = [];
+
+			if (gravity === "down") {
+				for (let row = boardSize - 1; row >= 0; row--) {
+					positions.push([row, lane]);
+				}
+			} else if (gravity === "up") {
+				for (let row = 0; row < boardSize; row++) {
+					positions.push([row, lane]);
+				}
+			} else if (gravity === "left") {
+				for (let col = 0; col < boardSize; col++) {
+					positions.push([lane, col]);
+				}
+			} else {
+				for (let col = boardSize - 1; col >= 0; col--) {
+					positions.push([lane, col]);
+				}
+			}
+
+			return positions;
+		}
+
+		function changeGravity() {
+			if (gameOver) return;
+
+			const currentIndex = gravityDirections.indexOf(gravity);
+			gravity = gravityDirections[(currentIndex + 1) % gravityDirections.length];
+
+			applyGravity();
+
+			for (let player = 0; player < playerCount; player++) {
+				if (hasWinner(player)) {
+					gameOver = true;
+					render();
+					statusElement.textContent =
+						`Player ${player + 1} (${symbols[player]}) wins!`;
+					return;
+				}
+			}
+
+			render();
+		}
+
+		function applyGravity() {
+			for (let lane = 0; lane < boardSize; lane++) {
+				const positions = getLanePositions(lane);
+				const pieces = positions
+					.map(([row, col]) => board[row][col])
+					.filter(player => player !== -1);
+
+				positions.forEach(([row, col], index) => {
+					board[row][col] = pieces[index] ?? -1;
+				});
+			}
+		}
+
+		function hasWinner(player) {
+			const directions = [
+				[0, 1],
+				[1, 0],
+				[1, 1],
+				[1, -1]
+			];
+
+			for (let row = 0; row < boardSize; row++) {
+				for (let col = 0; col < boardSize; col++) {
+					if (board[row][col] !== player) continue;
+
+					for (const [rowStep, colStep] of directions) {
+						let count = 0;
+
+						for (let step = 0; step < boardSize; step++) {
+							const nextRow = row + rowStep * step;
+							const nextCol = col + colStep * step;
+
+							if (
+								nextRow < 0 ||
+								nextRow >= boardSize ||
+								nextCol < 0 ||
+								nextCol >= boardSize ||
+								board[nextRow][nextCol] !== player
+							) {
+								break;
+							}
+
+							count++;
+						}
+
+						if (count === boardSize) return true;
+					}
+				}
+			}
+
+			return false;
+		}
+
+		boardElement.addEventListener("click", event => {
+			const cell = event.target.closest(".cell");
+			if (!cell) return;
+
+			dropSymbol(Number(cell.dataset.row), Number(cell.dataset.col));
+		});
+
+		playerSelect.addEventListener("change", startGame);
+		sizeSelect.addEventListener("change", startGame);
+		gravityButton.addEventListener("click", changeGravity);
+		resetButton.addEventListener("click", startGame);
+
+		startGame();
+	</script>
+</body>
+</html>
